@@ -3,7 +3,7 @@
     <!-- Navegação superior -->
     <nav class="main-nav" v-if="showNavigation">
       <div class="nav-brand">
-        <img src="./assets/logo_Camboriú_Assessoria.png" alt="Camboriú Assessoria" class="nav-logo">
+        <img src="./assets/camboriuassessoria.png" alt="Camboriú Assessoria" class="nav-logo">
       </div>
       
       <div class="nav-menu">
