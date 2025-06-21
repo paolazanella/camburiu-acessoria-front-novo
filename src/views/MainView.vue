@@ -6,7 +6,7 @@
                 <h1>Sistema de Gestão</h1>
                 <p class="subtitle">Gerencie clientes e veículos de forma eficiente</p>
             </div>
-            
+
             <!-- Estatísticas Rápidas -->
             <div class="stats-grid">
                 <div class="stat-card">
@@ -44,7 +44,7 @@
                         <small>Cadastrar cliente com veículo</small>
                     </div>
                 </button>
-                
+
                 <button @click="carregarClientesAgora" class="action-btn accent" :disabled="carregando">
                     <span class="action-icon">🔄</span>
                     <div class="action-text">
@@ -58,13 +58,8 @@
         <!-- Busca -->
         <div class="search-section">
             <div class="search-container">
-                <input 
-                    type="text" 
-                    v-model="termoBusca" 
-                    placeholder="Buscar por nome, CPF/CNPJ ou placa..."
-                    class="search-input"
-                    @input="filtrarClientes"
-                />
+                <input type="text" v-model="termoBusca" placeholder="Buscar por nome, CPF/CNPJ ou placa..."
+                    class="search-input" @input="filtrarClientes" />
                 <span class="search-icon">🔍</span>
             </div>
         </div>
@@ -103,12 +98,8 @@
 
             <!-- Cards dos Clientes -->
             <div v-else class="clientes-grid">
-                <div 
-                    v-for="cliente in clientesFiltrados" 
-                    :key="cliente.id" 
-                    class="cliente-card"
-                    :class="{ 'has-vehicles': cliente.veiculos && cliente.veiculos.length > 0 }"
-                >
+                <div v-for="cliente in clientesFiltrados" :key="cliente.id" class="cliente-card"
+                    :class="{ 'has-vehicles': cliente.veiculos && cliente.veiculos.length > 0 }">
                     <div class="card-header">
                         <h3>{{ cliente.nome }}</h3>
                         <div class="card-actions">
@@ -128,28 +119,66 @@
                         <div class="info-row">
                             <strong>Telefone:</strong> {{ formatarTelefone(cliente.telefone) }}
                         </div>
-                        
+
                         <!-- Veículos do Cliente -->
                         <div v-if="cliente.veiculos && cliente.veiculos.length > 0" class="veiculos-section">
                             <h4>🚗 Veículos ({{ cliente.veiculos.length }})</h4>
                             <div class="veiculos-list">
-                                <div 
-                                    v-for="veiculo in cliente.veiculos" 
-                                    :key="veiculo.id" 
-                                    class="veiculo-item"
-                                    :class="{ 'vencendo': isVencendo(veiculo.vencimento) }"
-                                >
-                                    <div class="veiculo-info">
-                                        <strong>{{ veiculo.placa }}</strong>
-                                        <small>RENAVAM: {{ veiculo.renavam }}</small>
+                                <!-- AQUI É O LOOP DOS VEÍCULOS - ESTAVA FALTANDO! -->
+                                <div v-for="veiculo in cliente.veiculos" :key="veiculo.id" 
+                                     class="veiculo-item" :class="{ 'vencendo': isVencendo(veiculo.vencimento) }">
+                                    
+                                    <!-- Se estiver editando este veículo -->
+                                    <div v-if="veiculoEditando && veiculoEditando.id === veiculo.id" class="veiculo-edit-form">
+                                        <div class="veiculo-edit-inputs">
+                                            <div class="input-group">
+                                                <label>Placa:</label>
+                                                <input v-model="veiculoEditando.placa" @input="formatarPlacaEdicao"
+                                                    maxlength="8" placeholder="ABC1234" class="edit-input" />
+                                            </div>
+                                            <div class="input-group">
+                                                <label>RENAVAM:</label>
+                                                <input v-model="veiculoEditando.renavam" @input="formatarRenavamEdicao"
+                                                    maxlength="11" placeholder="123456789" class="edit-input" />
+                                            </div>
+                                        </div>
+                                        <div class="veiculo-edit-actions">
+                                            <button @click="salvarEdicaoVeiculo" class="btn-save-edit"
+                                                :disabled="salvandoVeiculo">
+                                                {{ salvandoVeiculo ? '💾' : '✅' }} Salvar
+                                            </button>
+                                            <button @click="cancelarEdicaoVeiculo" class="btn-cancel-edit">
+                                                ❌ Cancelar
+                                            </button>
+                                        </div>
                                     </div>
-                                    <div class="veiculo-vencimento">
-                                        <span class="vencimento-date">
-                                            {{ formatarData(veiculo.vencimento) }}
-                                        </span>
-                                        <span v-if="isVencendo(veiculo.vencimento)" class="status-alert">
-                                            Vencendo!
-                                        </span>
+
+                                    <!-- Visualização normal do veículo -->
+                                    <div v-else class="veiculo-display">
+                                        <div class="veiculo-info">
+                                            <strong>{{ veiculo.placa }}</strong>
+                                            <small>RENAVAM: {{ veiculo.renavam }}</small>
+                                        </div>
+                                        <div class="veiculo-actions">
+                                            <div class="veiculo-vencimento">
+                                                <span class="vencimento-date">
+                                                    {{ formatarData(veiculo.vencimento) }}
+                                                </span>
+                                                <span v-if="isVencendo(veiculo.vencimento)" class="status-alert">
+                                                    Vencendo!
+                                                </span>
+                                            </div>
+                                            <div class="veiculo-buttons">
+                                                <button @click="editarVeiculo(veiculo)" class="btn-edit-veiculo"
+                                                    title="Editar Veículo">
+                                                    ✏️
+                                                </button>
+                                                <button @click="excluirVeiculo(veiculo, cliente)" class="btn-delete-veiculo"
+                                                    title="Excluir Veículo">
+                                                    🗑️
+                                                </button>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -189,14 +218,12 @@
         </button>
 
         <!-- Floating Action Button -->
-        <FloatingActionButton 
-            :loading="carregando" 
-            @refresh="carregarClientesAgora"
-        />
+        <FloatingActionButton :loading="carregando" @refresh="carregarClientesAgora" />
     </div>
 </template>
 
 <script>
+import veiculoService from '@/services/veiculoService'
 import clienteService from '@/services/clienteService'
 import FloatingActionButton from '@/components/ui/FloatingActionButton.vue'
 
@@ -213,7 +240,10 @@ export default {
             erro: null,
             termoBusca: '',
             showDebug: false,
-            ultimaAtualizacao: null
+            ultimaAtualizacao: null,
+            // 🔥 ADICIONE ESTAS DUAS LINHAS QUE ESTAVAM FALTANDO:
+            veiculoEditando: null,
+            salvandoVeiculo: false
         }
     },
     computed: {
@@ -273,10 +303,10 @@ export default {
             this.clientesFiltrados = this.clientes.filter(cliente => {
                 // Busca por nome, CPF/CNPJ
                 const matchCliente = cliente.nome.toLowerCase().includes(termo) ||
-                                   cliente.cpfOuCnpj.toLowerCase().includes(termo)
+                    cliente.cpfOuCnpj.toLowerCase().includes(termo)
 
                 // Busca por placa dos veículos
-                const matchVeiculo = cliente.veiculos?.some(veiculo => 
+                const matchVeiculo = cliente.veiculos?.some(veiculo =>
                     veiculo.placa.toLowerCase().includes(termo)
                 ) || false
 
@@ -311,6 +341,120 @@ export default {
             })
         },
 
+        // 🔥 MÉTODOS QUE ESTAVAM FALTANDO - ADICIONE ESTES:
+        
+        // 🚗 EDITAR VEÍCULO
+        editarVeiculo(veiculo) {
+            this.veiculoEditando = {
+                id: veiculo.id,
+                placa: veiculo.placa,
+                renavam: veiculo.renavam
+            }
+        },
+
+        cancelarEdicaoVeiculo() {
+            this.veiculoEditando = null
+        },
+
+        formatarPlacaEdicao() {
+            if (this.veiculoEditando) {
+                this.veiculoEditando.placa = veiculoService.formatarPlaca(this.veiculoEditando.placa)
+            }
+        },
+
+        formatarRenavamEdicao() {
+            if (this.veiculoEditando) {
+                this.veiculoEditando.renavam = veiculoService.formatarRenavam(this.veiculoEditando.renavam)
+            }
+        },
+
+        async salvarEdicaoVeiculo() {
+            if (!this.veiculoEditando) return
+
+            // Validar dados
+            if (!veiculoService.validarPlaca(this.veiculoEditando.placa)) {
+                alert('Placa inválida! Use formato ABC1234 ou ABC1D23')
+                return
+            }
+
+            if (!veiculoService.validarRenavam(this.veiculoEditando.renavam)) {
+                alert('RENAVAM inválido! Deve ter entre 9 e 11 dígitos')
+                return
+            }
+
+            this.salvandoVeiculo = true
+
+            try {
+                console.log('💾 Atualizando veículo:', this.veiculoEditando)
+                
+                await veiculoService.atualizarVeiculo(this.veiculoEditando.id, {
+                    placa: this.veiculoEditando.placa,
+                    renavam: this.veiculoEditando.renavam
+                })
+
+                console.log('✅ Veículo atualizado com sucesso')
+                
+                // Recarregar dados
+                await this.carregarClientesAgora()
+                
+                // Limpar estado de edição
+                this.veiculoEditando = null
+                
+                alert('Veículo atualizado com sucesso!')
+
+            } catch (error) {
+                console.error('❌ Erro ao atualizar veículo:', error)
+                
+                let errorMessage = 'Erro ao atualizar veículo. '
+                if (error.response?.data?.message) {
+                    errorMessage += error.response.data.message
+                } else if (error.response?.status === 409) {
+                    errorMessage += 'Placa já cadastrada para outro veículo.'
+                } else {
+                    errorMessage += 'Tente novamente.'
+                }
+                
+                alert(errorMessage)
+            } finally {
+                this.salvandoVeiculo = false
+            }
+        },
+
+        // 🗑️ EXCLUIR VEÍCULO
+        async excluirVeiculo(veiculo, cliente) {
+            const confirmar = confirm(`Deseja realmente excluir o veículo ${veiculo.placa} de ${cliente.nome}?`)
+            
+            if (!confirmar) return
+
+            try {
+                console.log('🗑️ Excluindo veículo:', veiculo.id)
+                
+                await veiculoService.excluirVeiculo(veiculo.id)
+                
+                console.log('✅ Veículo excluído com sucesso')
+                
+                // Recarregar dados
+                await this.carregarClientesAgora()
+                
+                alert('Veículo excluído com sucesso!')
+
+            } catch (error) {
+                console.error('❌ Erro ao excluir veículo:', error)
+                
+                let errorMessage = 'Erro ao excluir veículo. '
+                if (error.response?.data?.message) {
+                    errorMessage += error.response.data.message
+                } else if (error.response?.status === 404) {
+                    errorMessage += 'Veículo não encontrado.'
+                } else {
+                    errorMessage += 'Tente novamente.'
+                }
+                
+                alert(errorMessage)
+            }
+        },
+
+        // 🔧 MÉTODOS EXISTENTES (mantém como estão):
         formatarCpfCnpj(cpfCnpj) {
             if (!cpfCnpj) return ''
             const clean = cpfCnpj.replace(/\D/g, '')
@@ -368,6 +512,8 @@ export default {
 </script>
 
 <style scoped>
+/* SEUS ESTILOS EXISTENTES + NOVOS ESTILOS PARA VEÍCULOS */
+
 .main-container {
     max-width: 1400px;
     margin: 0 auto;
@@ -726,7 +872,8 @@ export default {
     color: #333;
 }
 
-/* Veículos */
+/* 🔥 ESTILOS PARA VEÍCULOS - ADICIONE ESTES: */
+
 .veiculos-section {
     margin-top: 20px;
     padding-top: 20px;
@@ -744,19 +891,133 @@ export default {
 }
 
 .veiculo-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 12px;
-    margin-bottom: 8px;
+    padding: 15px;
+    margin-bottom: 10px;
     background: #f8f9fa;
     border-radius: 8px;
     border-left: 4px solid #28a745;
+    transition: all 0.3s ease;
 }
 
 .veiculo-item.vencendo {
     border-left-color: #dc3545;
     background: #fff5f5;
+}
+
+.veiculo-display {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.veiculo-actions {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.veiculo-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+.btn-edit-veiculo, .btn-delete-veiculo {
+    background: none;
+    border: none;
+    padding: 6px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: background-color 0.3s;
+}
+
+.btn-edit-veiculo:hover {
+    background: #e3f2fd;
+}
+
+.btn-delete-veiculo:hover {
+    background: #ffebee;
+}
+
+/* Estilos para edição inline */
+.veiculo-edit-form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.veiculo-edit-inputs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+.input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.input-group label {
+    font-weight: 600;
+    color: #333;
+    font-size: 0.9rem;
+}
+
+.edit-input {
+    padding: 8px 12px;
+    border: 2px solid #e9ecef;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    transition: border-color 0.3s;
+}
+
+.edit-input:focus {
+    outline: none;
+    border-color: #2E8B57;
+    box-shadow: 0 0 0 2px rgba(46, 139, 87, 0.1);
+}
+
+.veiculo-edit-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
+.btn-save-edit {
+    background: #28a745;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 600;
+    transition: background-color 0.3s;
+}
+
+.btn-save-edit:hover:not(:disabled) {
+    background: #218838;
+}
+
+.btn-save-edit:disabled {
+    background: #6c757d;
+    cursor: not-allowed;
+}
+
+.btn-cancel-edit {
+    background: #6c757d;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.btn-cancel-edit:hover {
+    background: #5a6268;
 }
 
 .veiculo-info strong {
@@ -882,10 +1143,19 @@ export default {
         gap: 10px;
     }
 
-    .veiculo-item {
+    .veiculo-display {
         flex-direction: column;
         align-items: flex-start;
-        gap: 8px;
+        gap: 10px;
+    }
+
+    .veiculo-actions {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .veiculo-edit-inputs {
+        grid-template-columns: 1fr;
     }
 }
 </style>
