@@ -55,6 +55,11 @@ const routes = [
     component: () =>
       import(/* webpackChunkName: "about" */ "../views/AboutView.vue"),
   },
+  {
+    path: "/teste-perfil",
+    name: "teste-perfil",
+    component: () => import("../views/TestePerfilView.vue"),
+},
 ];
 
 // Criação do router
