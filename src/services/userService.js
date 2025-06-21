@@ -1,37 +1,37 @@
-// src/services/userService.js
+// src/services/userService.js - BASEADO NO SEU BACKEND REAL
 import api from './api'
 
 export default {
-    // 👤 PERFIL DO USUÁRIO LOGADO
+    // 👤 OBTER PERFIL DO USUÁRIO LOGADO (usando o novo endpoint /me)
     async obterPerfilLogado() {
         try {
             console.log('🔍 Obtendo perfil do usuário logado...')
             
-            // Pega dados do localStorage primeiro (mais rápido)
-            const userData = localStorage.getItem('user')
-            if (!userData) {
-                throw new Error('Dados do usuário não encontrados no localStorage')
-            }
+            const response = await api.get('/usuarios/me')
+            console.log('✅ Perfil obtido:', response.data)
             
-            const user = JSON.parse(userData)
-            
-            // Se tem ID, busca dados atualizados na API
-            if (user.id) {
-                const response = await api.get(`/usuarios/${user.id}`)
-                console.log('✅ Perfil atualizado obtido da API:', response.data)
-                return response.data
-            } else {
-                // Fallback: busca por email (se não tem ID)
-                console.log('⚠️ Usando dados do localStorage (sem ID):', user)
-                return user
+            // Atualizar localStorage com dados atualizados
+            const userAtualizado = {
+                ...JSON.parse(localStorage.getItem('user') || '{}'),
+                ...response.data
             }
+            localStorage.setItem('user', JSON.stringify(userAtualizado))
+            
+            return response.data
         } catch (error) {
             console.error('❌ Erro ao obter perfil:', error)
+            
+            if (error.response?.status === 401) {
+                localStorage.removeItem('token')
+                localStorage.removeItem('user')
+                window.location.href = '/'
+            }
+            
             throw error
         }
     },
 
-    // ✏️ ATUALIZAR PERFIL
+    // ✏️ ATUALIZAR PERFIL (usando PUT /usuarios/{id})
     async atualizarPerfil(userId, dadosUsuario) {
         try {
             console.log('💾 Atualizando perfil ID:', userId, dadosUsuario)
@@ -39,14 +39,14 @@ export default {
             const payload = {
                 nome: dadosUsuario.nome?.trim(),
                 email: dadosUsuario.email?.trim(),
-                status: dadosUsuario.status || 2 // Default: usuário comum
+                status: dadosUsuario.status || 2
             }
 
             const response = await api.put(`/usuarios/${userId}`, payload)
             
             console.log('✅ Perfil atualizado:', response.data)
             
-            // Atualizar localStorage com novos dados
+            // Atualizar localStorage
             const userAtualizado = {
                 ...JSON.parse(localStorage.getItem('user') || '{}'),
                 ...response.data
@@ -61,34 +61,35 @@ export default {
         }
     },
 
-    // 🔒 ALTERAR SENHA (endpoint específico se existir, senão usar PUT)
+    // 🔒 ALTERAR SENHA (usando PUT /usuarios/{id}/senha)
     async alterarSenha(userId, senhaAtual, novaSenha) {
         try {
             console.log('🔒 Alterando senha do usuário ID:', userId)
             
-            // Como seu backend não tem endpoint específico para senha,
-            // vamos usar a autenticação para validar senha atual
             const payload = {
                 senhaAtual: senhaAtual,
                 novaSenha: novaSenha
             }
             
-            // Se não existe endpoint específico, implementar validação no frontend
             const response = await api.put(`/usuarios/${userId}/senha`, payload)
-            
             console.log('✅ Senha alterada com sucesso')
             return response.data
         } catch (error) {
-            // Se endpoint não existe, usar PUT normal (cuidado com segurança)
-            console.warn('⚠️ Endpoint específico para senha não encontrado')
             console.error('❌ Erro ao alterar senha:', error)
-            throw error
+            
+            if (error.response?.status === 400) {
+                if (error.response.data.includes('Senha atual incorreta')) {
+                    throw new Error('Senha atual incorreta')
+                } else if (error.response.data.includes('pelo menos 6 caracteres')) {
+                    throw new Error('Nova senha deve ter pelo menos 6 caracteres')
+                }
+            }
+            
+            throw new Error('Erro ao alterar senha')
         }
     },
 
-    // 👥 GERENCIAMENTO DE USUÁRIOS (ADMIN)
-
-    // 📋 Listar todos os usuários
+    // 👥 LISTAR TODOS OS USUÁRIOS (GET /usuarios - só admin)
     async listarUsuarios() {
         try {
             console.log('👥 Listando todos os usuários...')
@@ -102,7 +103,7 @@ export default {
         }
     },
 
-    // 🔍 Buscar usuário por ID
+    // 🔍 BUSCAR USUÁRIO POR ID (GET /usuarios/{id})
     async buscarUsuarioPorId(userId) {
         try {
             console.log('🔍 Buscando usuário ID:', userId)
@@ -116,7 +117,7 @@ export default {
         }
     },
 
-    // ➕ Criar novo usuário (ADMIN)
+    // ➕ CRIAR NOVO USUÁRIO (POST /usuarios)
     async criarUsuario(dadosUsuario) {
         try {
             console.log('➕ Criando novo usuário:', dadosUsuario)
@@ -127,7 +128,7 @@ export default {
                 nome: dadosUsuario.nome?.trim(),
                 email: dadosUsuario.email?.trim(),
                 senha: dadosUsuario.senha,
-                status: dadosUsuario.status || 2 // Default: usuário comum
+                status: dadosUsuario.status || 2
             }
 
             const response = await api.post('/usuarios', payload)
@@ -140,7 +141,7 @@ export default {
         }
     },
 
-    // ✏️ Atualizar usuário (ADMIN)
+    // ✏️ ATUALIZAR USUÁRIO (PUT /usuarios/{id} - para admin)
     async atualizarUsuario(userId, dadosUsuario) {
         try {
             console.log('💾 Atualizando usuário ID:', userId, dadosUsuario)
@@ -161,7 +162,7 @@ export default {
         }
     },
 
-    // 🗑️ Deletar usuário (ADMIN)
+    // 🗑️ DELETAR USUÁRIO (DELETE /usuarios/{id} - só admin)
     async deletarUsuario(userId) {
         try {
             console.log('🗑️ Deletando usuário ID:', userId)
@@ -184,7 +185,7 @@ export default {
             if (!userData) return false
             
             const user = JSON.parse(userData)
-            return user.status === 1
+            return Number(user.status) === 1
         } catch {
             return false
         }
@@ -228,7 +229,7 @@ export default {
             }
         }
 
-        if (dadosUsuario.status && ![1, 2].includes(dadosUsuario.status)) {
+        if (dadosUsuario.status && ![1, 2].includes(Number(dadosUsuario.status))) {
             erros.push('Status deve ser 1 (Admin) ou 2 (Usuário)')
         }
 
@@ -245,7 +246,7 @@ export default {
 
     // 🔧 Formatar status para exibição
     formatarStatus(status) {
-        switch (status) {
+        switch (Number(status)) {
             case 1: return 'Administrador'
             case 2: return 'Usuário'
             default: return 'Desconhecido'
@@ -254,19 +255,24 @@ export default {
 
     // 🎨 Obter cor do status
     getCorStatus(status) {
-        switch (status) {
+        switch (Number(status)) {
             case 1: return '#dc3545' // Vermelho para admin
             case 2: return '#28a745' // Verde para usuário
             default: return '#6c757d' // Cinza para desconhecido
         }
     },
 
-    // 🛠️ Tratamento de erros melhorado
+    // 🛠️ Tratamento de erros
     handleError(error, mensagemPadrao) {
         let mensagem = mensagemPadrao
 
-        if (error.response?.data?.message) {
-            mensagem = error.response.data.message
+        if (error.response?.data) {
+            // Se a resposta é uma string (como do seu backend)
+            if (typeof error.response.data === 'string') {
+                mensagem = error.response.data
+            } else if (error.response.data.message) {
+                mensagem = error.response.data.message
+            }
         } else if (error.response?.status === 400) {
             mensagem = 'Dados inválidos. Verifique as informações.'
         } else if (error.response?.status === 401) {
@@ -277,8 +283,6 @@ export default {
             mensagem = 'Sem permissão para realizar esta operação.'
         } else if (error.response?.status === 404) {
             mensagem = 'Usuário não encontrado.'
-        } else if (error.response?.status === 409) {
-            mensagem = 'Email já cadastrado.'
         } else if (error.response?.status === 500) {
             mensagem = 'Erro interno do servidor. Tente novamente.'
         } else if (error.message) {
