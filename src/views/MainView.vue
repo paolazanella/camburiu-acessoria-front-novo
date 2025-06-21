@@ -199,39 +199,16 @@
                 </div>
             </div>
         </div>
-
-        <!-- Debug Panel (apenas em desenvolvimento) -->
-        <div v-if="showDebug" class="debug-panel">
-            <h3>🐛 Debug Info</h3>
-            <div class="debug-info">
-                <p><strong>Token:</strong> {{ token ? 'Presente ✅' : 'Ausente ❌' }}</p>
-                <p><strong>Total Clientes:</strong> {{ clientes.length }}</p>
-                <p><strong>Status Conexão:</strong> {{ erro ? 'Erro ❌' : 'OK ✅' }}</p>
-                <p><strong>Última Atualização:</strong> {{ ultimaAtualizacao }}</p>
-                <button @click="showDebug = false" class="btn-close-debug">Fechar Debug</button>
-            </div>
-        </div>
-
-        <!-- Botão Debug (canto da tela) -->
-        <button @click="showDebug = !showDebug" class="debug-toggle" title="Toggle Debug">
-            🐛
-        </button>
-
-        <!-- Floating Action Button -->
-        <FloatingActionButton :loading="carregando" @refresh="carregarClientesAgora" />
     </div>
 </template>
 
 <script>
 import veiculoService from '@/services/veiculoService'
 import clienteService from '@/services/clienteService'
-import FloatingActionButton from '@/components/ui/FloatingActionButton.vue'
+
 
 export default {
     name: "MainView",
-    components: {
-        FloatingActionButton
-    },
     data() {
         return {
             clientes: [],
@@ -239,7 +216,6 @@ export default {
             carregando: false,
             erro: null,
             termoBusca: '',
-            showDebug: false,
             ultimaAtualizacao: null,
             // 🔥 ADICIONE ESTAS DUAS LINHAS QUE ESTAVAM FALTANDO:
             veiculoEditando: null,
@@ -247,9 +223,6 @@ export default {
         }
     },
     computed: {
-        token() {
-            return localStorage.getItem('token')
-        },
         totalVeiculos() {
             return this.clientes.reduce((total, cliente) => {
                 return total + (cliente.veiculos ? cliente.veiculos.length : 0)
@@ -1064,55 +1037,6 @@ export default {
     color: #6c757d;
     margin: 0 0 15px 0;
     font-style: italic;
-}
-
-/* Debug Panel */
-.debug-panel {
-    position: fixed;
-    bottom: 60px;
-    right: 20px;
-    background: rgba(0, 0, 0, 0.9);
-    color: white;
-    padding: 20px;
-    border-radius: 12px;
-    max-width: 300px;
-    z-index: 1000;
-}
-
-.debug-panel h3 {
-    margin: 0 0 15px 0;
-    font-size: 1rem;
-}
-
-.debug-info p {
-    margin: 5px 0;
-    font-size: 0.85rem;
-}
-
-.btn-close-debug {
-    background: #dc3545;
-    color: white;
-    border: none;
-    padding: 5px 10px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 0.8rem;
-    margin-top: 10px;
-}
-
-.debug-toggle {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    background: rgba(0, 0, 0, 0.7);
-    color: white;
-    border: none;
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    cursor: pointer;
-    font-size: 1.2rem;
-    z-index: 999;
 }
 
 /* Responsive */
